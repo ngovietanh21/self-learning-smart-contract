@@ -7,7 +7,7 @@ import "./access_control/AccessControl.sol";
 import "./IBEP20.sol";
 import "./utils/SafeMath.sol";
 
-contract BEP20Token is Context, IBEP20, AccessControl {
+contract MyToken is Context, IBEP20, AccessControl {
     using SafeMath for uint256;
 
     bytes32 public constant ADMIN = keccak256("ADMIN");
@@ -24,59 +24,61 @@ contract BEP20Token is Context, IBEP20, AccessControl {
     address private _owner;
 
     constructor() {
-        // _name = {{TOKEN_NAME}};
-        // _symbol = {{TOKEN_SYMBOL}};
-        // _decimals = {{DECIMALS}};
-        // _totalSupply = {{TOTAL_SUPPLY}};
+        _name = "MYToken";
+        _symbol = "MYT";
+        _decimals = 18;
+        _totalSupply = 1000000000000000000000000;
+        
         _setRoleAdmin(ADMIN, ADMIN);
         _setRoleAdmin(DIRECTOR, ADMIN);
         _setRoleAdmin(DEPUTY_DIRECTOR, ADMIN);
 
-        _grantRole(ADMIN, _msgSender());
-        _balances[_msgSender()] = _totalSupply;
-
-        emit Transfer(address(0), _msgSender(), _totalSupply);
+        _owner = _msgSender();
+        _grantRole(ADMIN, _owner);
+        _balances[_owner] = _totalSupply;
+        
+        emit Transfer(address(0), _owner, _totalSupply);
     }
 
-    function totalSupply() external view returns (uint256) {
+    function totalSupply() external override view returns (uint256) {
         return _totalSupply;
     }
 
-    function decimals() external view returns (uint8) {
+    function decimals() external override view returns (uint8) {
         return _decimals;
     }
 
-    function symbol() external view returns (string memory) {
+    function symbol() external override view returns (string memory) {
         return _symbol;
     }
 
-    function name() external view returns (string memory) {
+    function name() external override view returns (string memory) {
         return _name;
     }
 
-    function getOwner() external view returns (address) {
+    function getOwner() external override view returns (address) {
         return _owner;
     }
 
-    function balanceOf(address account) external view returns (uint256) {
+    function balanceOf(address account) external override view returns (uint256) {
         return _balances[account];
     }
 
-    function transfer(address recipient, uint256 amount) external returns (bool) {
+    function transfer(address recipient, uint256 amount) external override returns (bool) {
         _transfer(_msgSender(), recipient, amount);
         return true;
     }
 
-    function allowance(address owner, address spender) external view returns (uint256) {
+    function allowance(address owner, address spender) external override view returns (uint256) {
         return _allowances[owner][spender];
     }
 
-    function approve(address spender, uint256 amount) external returns (bool) {
+    function approve(address spender, uint256 amount) external override returns (bool) {
         _approve(_msgSender(), spender, amount);
         return true;
     }
 
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) external override returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "BEP20: transfer amount exceeds allowance"));
         return true;
@@ -86,10 +88,20 @@ contract BEP20Token is Context, IBEP20, AccessControl {
         require(sender != address(0), "transfer from the zero address");
         require(recipient != address(0), "transfer to the zero address");
 
+        uint256 maxiumAmount = 0;
+        bool requireMaxiumAmount = true;
         if (hasRole(DEPUTY_DIRECTOR, sender)) {
-             require(amount < 1000, "DEPUTY_DIRECTOR maxium 1000");
-        } else if (!hasRole(DIRECTOR, sender)) {
-            revert("Cannot tranfer token");
+            requireMaxiumAmount = true;
+            maxiumAmount = 1000;
+        }
+        if (hasRole(ADMIN, sender) || hasRole(DIRECTOR, sender)) {
+            requireMaxiumAmount = false;
+        }
+        if (requireMaxiumAmount) {
+            if (maxiumAmount == 0) {
+                revert("Cannot tranfer money");
+            }
+            require(amount <= maxiumAmount, "Cannot tranfer maxium amount");
         }
         _balances[sender] = _balances[sender].sub(amount, "transfer amount exceeds balance");
         _balances[recipient] = _balances[recipient].add(amount);

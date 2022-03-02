@@ -7,12 +7,8 @@ import "./access_control/AccessControl.sol";
 import "./IBEP20.sol";
 import "./utils/SafeMath.sol";
 
-contract MyToken is Context, IBEP20, AccessControl {
+contract MyToken is Context, IBEP20 {
     using SafeMath for uint256;
-
-    bytes32 public constant ADMIN = keccak256("ADMIN");
-    bytes32 public constant DIRECTOR = keccak256("DIRECTOR");
-    bytes32 public constant DEPUTY_DIRECTOR = keccak256("DEPUTY_DIRECTOR");
 
     mapping (address => uint256) private _balances;
     mapping (address => mapping (address => uint256)) private _allowances;
@@ -29,12 +25,7 @@ contract MyToken is Context, IBEP20, AccessControl {
         _decimals = 18;
         _totalSupply = 1000000000000000000000000;
         
-        _setRoleAdmin(ADMIN, ADMIN);
-        _setRoleAdmin(DIRECTOR, ADMIN);
-        _setRoleAdmin(DEPUTY_DIRECTOR, ADMIN);
-
         _owner = _msgSender();
-        _grantRole(ADMIN, _owner);
         _balances[_owner] = _totalSupply;
         
         emit Transfer(address(0), _owner, _totalSupply);
@@ -88,21 +79,6 @@ contract MyToken is Context, IBEP20, AccessControl {
         require(sender != address(0), "transfer from the zero address");
         require(recipient != address(0), "transfer to the zero address");
 
-        uint256 maxiumAmount = 0;
-        bool requireMaxiumAmount = true;
-        if (hasRole(DEPUTY_DIRECTOR, sender)) {
-            requireMaxiumAmount = true;
-            maxiumAmount = 1000;
-        }
-        if (hasRole(ADMIN, sender) || hasRole(DIRECTOR, sender)) {
-            requireMaxiumAmount = false;
-        }
-        if (requireMaxiumAmount) {
-            if (maxiumAmount == 0) {
-                revert("Cannot tranfer money");
-            }
-            require(amount <= maxiumAmount, "Cannot tranfer maxium amount");
-        }
         _balances[sender] = _balances[sender].sub(amount, "transfer amount exceeds balance");
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);

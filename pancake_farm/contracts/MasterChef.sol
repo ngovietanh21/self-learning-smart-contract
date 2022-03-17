@@ -217,7 +217,7 @@ contract MasterChef is Ownable {
             pool.lastRewardBlock = block.number;
             return;
         }
-        uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
+        uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number); // block.number - pool.lastRewardBlock
         uint256 cakeReward = multiplier.mul(cakePerBlock).mul(pool.allocPoint).div(totalAllocPoint);
         cake.mint(devaddr, cakeReward.div(10));
         cake.mint(address(syrup), cakeReward);

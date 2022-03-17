@@ -35,11 +35,16 @@ describe("SyrupBar", function () {
     
     it('safeCakeTransfer', async () => {
         expect(await cake.balanceOf(syrup.address)).to.eq(0)
+        // Chuyển vào syrup 1 lượng 1000 token cake
         await cake.connect(minter).mint(syrup.address, 1000);
+
+        // Dùng syrup để chuyển tiền cho bob 200
         await syrup.connect(minter).safeCakeTransfer(bob.address, 200);
         expect(await cake.balanceOf(bob.address)).to.eq(200)
         expect(await cake.balanceOf(syrup.address)).to.eq(800)
 
+        // Vì chuyển tiền lớn hơn số tiền có trong pool: 2000 > 800 nên chỉ chuyển 800
+        // Là balance có 1000
         await syrup.connect(minter).safeCakeTransfer(bob.address, 2000);
         expect(await cake.balanceOf(bob.address)).to.eq(1000)
     });

@@ -4,35 +4,35 @@ const { ethers } = require("hardhat");
 
 describe("SousChef", function () {
     let alice, bob, carol, dev, minter
-    let chef, syrup
+    let chef, token
 
     beforeEach(async function () {
         [alice, bob, carol, dev, minter] = await ethers.getSigners()
         // contract
-        const SousChef = await ethers.getContractFactory('SousChef')
         const MockBEP20 = await ethers.getContractFactory('MockBEP20')
+        const SousChef = await ethers.getContractFactory('SousChef')
         // deploy tokens
-        syrup = await MockBEP20.connect(minter).deploy("BCA", "BC",1000000)
-        chef = await SousChef.connect(minter).deploy(syrup.address, 40, 300, 400)
+        token = await MockBEP20.connect(minter).deploy("BCA", "BC",1000000)
+        chef = await SousChef.connect(minter).deploy(token.address, 40, 300, 400)
     })
 
     it('sous chef now', async function () {
-        await syrup.connect(minter).transfer(bob.address, 1000)
-        await syrup.connect(minter).transfer(carol.address, 1000)
-        await syrup.connect(minter).transfer(alice.address, 1000)
-        expect(await syrup.balanceOf(bob.address)).to.eq(1000)
+        await token.connect(minter).transfer(bob.address, 1000)
+        await token.connect(minter).transfer(carol.address, 1000)
+        await token.connect(minter).transfer(alice.address, 1000)
+        expect(await token.balanceOf(bob.address)).to.eq(1000)
 
-        await syrup.connect(bob).approve(chef.address, 1000);
-        await syrup.connect(alice).approve(chef.address, 1000);
-        await syrup.connect(carol).approve(chef.address, 1000);
+        await token.connect(bob).approve(chef.address, 1000);
+        await token.connect(alice).approve(chef.address, 1000);
+        await token.connect(carol).approve(chef.address, 1000);
         
         await chef.connect(bob).deposit(10)
-        expect(await syrup.balanceOf(chef.address)).to.eq(10)
+        expect(await token.balanceOf(chef.address)).to.eq(10)
 
         await time.advanceBlockTo('300')
         
         await chef.connect(alice).deposit(30)
-        expect(await syrup.balanceOf(chef.address)).to.eq(40)
+        expect(await token.balanceOf(chef.address)).to.eq(40)
         expect(await chef.connect(bob).pendingReward(bob.address)).to.eq(40)
         
         await time.advanceBlockTo('302');
@@ -40,7 +40,7 @@ describe("SousChef", function () {
         expect(await chef.connect(alice).pendingReward(alice.address)).to.eq(30)
     
         await chef.connect(carol).deposit(40)
-        expect(await syrup.balanceOf(chef.address)).to.eq(80)
+        expect(await token.balanceOf(chef.address)).to.eq(80)
         await time.advanceBlockTo('304');
         //  bob 10, alice 30, carol 40
         expect(await chef.connect(bob).pendingReward(bob.address)).to.eq(65)
@@ -63,7 +63,7 @@ describe("SousChef", function () {
         await time.advanceBlockTo('310');
         expect(await chef.connect(bob).pendingReward(bob.address)).to.eq(118)
         expect(await chef.connect(alice).pendingReward(alice.address)).to.eq(166)
-        expect(await syrup.balanceOf(chef.address)).to.eq(80)
+        expect(await token.balanceOf(chef.address)).to.eq(80)
     
         await time.advanceBlockTo('400');
         expect(await chef.connect(bob).pendingReward(bob.address)).to.eq(568)
@@ -129,14 +129,14 @@ describe("SousChef", function () {
     });
     
     it('emergencyWithdraw', async () => {
-        await syrup.connect(minter).transfer(alice.address, 1000)
-        expect(await syrup.balanceOf(alice.address)).to.eq(1000)
+        await token.connect(minter).transfer(alice.address, 1000)
+        expect(await token.balanceOf(alice.address)).to.eq(1000)
 
-        await syrup.connect(alice).approve(chef.address, 1000);
+        await token.connect(alice).approve(chef.address, 1000);
         await chef.connect(alice).deposit(10)
-        expect(await syrup.balanceOf(alice.address)).to.eq(990)
+        expect(await token.balanceOf(alice.address)).to.eq(990)
         await chef.connect(alice).emergencyWithdraw();
-        expect(await syrup.balanceOf(alice.address)).to.eq(1000)
+        expect(await token.balanceOf(alice.address)).to.eq(1000)
         expect(await chef.connect(alice).pendingReward(alice.address)).to.eq(0)
     });
 });

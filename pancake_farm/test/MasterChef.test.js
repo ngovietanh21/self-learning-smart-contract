@@ -1,4 +1,4 @@
-const { expectRevert, time } = require('@openzeppelin/test-helpers');
+const { time } = require('@openzeppelin/test-helpers');
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
@@ -53,18 +53,20 @@ describe("MasterChef", function () {
         expect(await chef.poolLength()).to.eq(10)
 
         await time.advanceBlockTo('170');
+        // Alice Uỷ quyền cho chef sử dụng 1000 token lp1 của bản thân
         await lp1.connect(alice).approve(chef.address, 1000)
         expect(await cake.balanceOf(alice.address)).to.eq(0)
         await chef.connect(alice).deposit(1, 20)
         await chef.connect(alice).withdraw(1, 20)
         expect(await cake.balanceOf(alice.address)).to.eq(263)
-  
+        
+        // Alice Uỷ quyền cho chef sử dụng 1000 token cake của bản thân
         await cake.connect(alice).approve(chef.address, 1000)
         await chef.connect(alice).enterStaking(20)
         await chef.connect(alice).enterStaking(0)
         await chef.connect(alice).enterStaking(0)
         await chef.connect(alice).enterStaking(0)
-        expect(await cake.balanceOf(alice.address)).to.eq(993)
+        expect(await cake.balanceOf(alice.address)).to.eq(993) // 750 + 263 - 20
     })
 
     it('deposit/withdraw', async () => {

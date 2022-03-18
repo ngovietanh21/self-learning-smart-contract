@@ -7,6 +7,7 @@ import "./access/Ownable.sol";
 
 import "./CakeToken.sol";
 import "./SyrupBar.sol";
+import "hardhat/console.sol";
 
 // import "@nomiclabs/buidler/console.sol";
 
@@ -209,10 +210,13 @@ contract MasterChef is Ownable {
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
+        console.log("PoolInfo pid %d lastRewardBlock %d", _pid, pool.lastRewardBlock);
+        console.log("PoolInfo lastRewardBlock %d current %s", pool.lastRewardBlock, block.number);
         if (block.number <= pool.lastRewardBlock) {
             return;
         }
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+        console.log("PoolInfo lpSupply %d", lpSupply);
         if (lpSupply == 0) {
             pool.lastRewardBlock = block.number;
             return;
@@ -223,6 +227,8 @@ contract MasterChef is Ownable {
         cake.mint(address(syrup), cakeReward);
         pool.accCakePerShare = pool.accCakePerShare.add(cakeReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
+        console.log("PoolInfo multiplier %d cakeReward %d", multiplier, cakeReward);
+        console.log("PoolInfo accCakePerShare %d lastRewardBlock %d", pool.accCakePerShare,  pool.lastRewardBlock);
     }
 
     // Deposit LP tokens to MasterChef for CAKE allocation.
@@ -233,8 +239,10 @@ contract MasterChef is Ownable {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
+        console.log("UserInfo deposit amount %d rewardDebt %d", user.amount,  user.rewardDebt);
         if (user.amount > 0) {
             uint256 pending = user.amount.mul(pool.accCakePerShare).div(1e12).sub(user.rewardDebt);
+            console.log("UserInfo deposit pending %d", pending);
             if(pending > 0) {
                 safeCakeTransfer(msg.sender, pending);
             }
@@ -244,19 +252,21 @@ contract MasterChef is Ownable {
             user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accCakePerShare).div(1e12);
+        console.log("UserInfo deposit amount %d rewardDebt %d", user.amount,  user.rewardDebt);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
     // Withdraw LP tokens from MasterChef.
     function withdraw(uint256 _pid, uint256 _amount) public {
-
         require (_pid != 0, 'withdraw CAKE by unstaking');
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
 
         updatePool(_pid);
+        console.log("UserInfo withdraw amount %d rewardDebt %d", user.amount,  user.rewardDebt);
         uint256 pending = user.amount.mul(pool.accCakePerShare).div(1e12).sub(user.rewardDebt);
+        console.log("UserInfo withdraw pending %d", pending);
         if(pending > 0) {
             safeCakeTransfer(msg.sender, pending);
         }
@@ -265,6 +275,7 @@ contract MasterChef is Ownable {
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
         }
         user.rewardDebt = user.amount.mul(pool.accCakePerShare).div(1e12);
+        console.log("UserInfo withdraw amount %d rewardDebt %d", user.amount,  user.rewardDebt);
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
@@ -273,8 +284,10 @@ contract MasterChef is Ownable {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[0][msg.sender];
         updatePool(0);
+        console.log("UserInfo enterStaking amount %d rewardDebt %d", user.amount,  user.rewardDebt);
         if (user.amount > 0) {
             uint256 pending = user.amount.mul(pool.accCakePerShare).div(1e12).sub(user.rewardDebt);
+            console.log("UserInfo enterStaking pending %d", pending);
             if(pending > 0) {
                 safeCakeTransfer(msg.sender, pending);
             }
@@ -284,7 +297,7 @@ contract MasterChef is Ownable {
             user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accCakePerShare).div(1e12);
-
+        console.log("UserInfo enterStaking amount %d rewardDebt %d", user.amount,  user.rewardDebt);
         syrup.mint(msg.sender, _amount);
         emit Deposit(msg.sender, 0, _amount);
     }
